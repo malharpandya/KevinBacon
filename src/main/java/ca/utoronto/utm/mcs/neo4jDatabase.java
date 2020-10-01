@@ -63,7 +63,7 @@ public class neo4jDatabase {
   }
   
   public int insertMovie (String movie, String movieId) {
-
+    
     try (Session session = driver.session()) {
 
       try (Transaction tx = session.beginTransaction()) {
@@ -86,20 +86,26 @@ public class neo4jDatabase {
 
 
       } catch (Exception e) {
-
+        session.close();
         return 3;
       }
 
       session.writeTransaction(
-          tx -> tx.run("MERGE (a:movie {name: $x , movieId: $y})",
+          yx -> yx.run("MERGE (a:movie {name: $x , movieId: $y})",
               parameters("x", movie, "y", movieId)));
       session.close();
       return 1;
     } catch (Exception e) {
-
+      //close session here how?
+      //session.close();
       return 3;
     }
 
+  }
+  
+  //MALHAR WORK ON THIS.
+  public int insertRelation(String movieId, String actorId) {
+    return 0;
   }
 
   public void close() {
