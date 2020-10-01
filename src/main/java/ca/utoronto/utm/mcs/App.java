@@ -15,6 +15,7 @@ public class App
         
 
         server.createContext("/api/v1/addActor", new addActor());
+        server.createContext("/api/v1/addMovie", new addMovie());
         //7.1 
         //server.createContext("/api/v1/addActor",);
         server.start();
