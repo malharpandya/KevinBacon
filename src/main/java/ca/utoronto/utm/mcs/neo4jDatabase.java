@@ -147,6 +147,35 @@ public class neo4jDatabase {
             return 3;
         }
     }
+    
+    public int getActor(String actorId) {
+		try (Session session = driver.session()) {
+
+			try (Transaction tx = session.beginTransaction()) {
+				
+				Result actorIdResult = tx.run("MATCH (a:actor {actorId: $x}) \n RETURN a.actorId", parameters("x", actorId));
+				if (!actorIdResult.hasNext()) {
+					session.close();
+					return 4;
+				}
+				
+				Result actorResult = tx.run("MATCH (a:actor {actorId: $x}) \n RETURN a.name", parameters("x", actorId));
+				
+				Result moviesResult = tx.run("MATCH (a:actor {actorId: $x}) - [​r:ACTED_IN] -> (b:movie) \n RETURN b.name", parameters("x", actorId));
+				
+				session.close();
+				return 1;
+				
+				
+			} catch (Exception e) {
+				session.close();
+				return 3;
+			}
+
+		} catch (Exception e) {
+			return 3;
+		}
+	}
 
     public void close() {
         driver.close();
