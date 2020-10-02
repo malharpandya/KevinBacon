@@ -198,7 +198,7 @@ public class neo4jDatabase {
 		}
 	}
     
-public int getMovie(String movieId) {
+    public int getMovie(String movieId) {
         
         try (Session session = driver.session()) {
 
@@ -245,7 +245,39 @@ public int getMovie(String movieId) {
         }
     }
     
-    
+    public int hasRelationship(String actorId, String movieId) {
+    	try (Session session = driver.session()) {
+    		
+    		try (Transaction tx = session.beginTransaction()) {
+    			
+    			Result actorIdResult = tx.run("MATCH (a:actor {actorId: $x}) \n RETURN a.actorId", parameters("x", actorId));
+    			Result movieIdResult = tx.run("MATCH (a:movie {movieId: $x}) \n RETURN a.movieId", parameters("x", movieId));
+    			if (!(movieIdResult.hasNext() && actorIdResult.hasNext())) {
+                    session.close();
+                    return 4;
+                }
+    			
+    			Result hasRelationResult = tx.run("MATCH (a:actor {actorId:$x}), (b:movie {movieId:$y}) \n RETURN EXISTS((a)-[:ACTED_IN]->(b))", parameters("x", actorId, "y", movieId));
+    			
+    			Boolean hasRelationshipbool = hasRelationResult.next().get(0).isTrue();
+    			System.out.println(hasRelationshipbool.toString());
+    			
+    			response = new JSONObject().put("actorId", actorId).put("movieId", movieId).put("hasRelationship", hasRelationshipbool);
+                session.close();
+                return 1;
+    			
+    			
+    		} catch (Exception e) {
+    			return 3;
+    		}
+    		
+    	} catch(Exception e) {
+    		return 3;
+    	}
+    	
+    	
+    	
+    }
     
     public JSONObject getResponse() {
 		return this.response;
