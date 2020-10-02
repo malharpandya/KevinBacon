@@ -8,53 +8,54 @@ import org.json.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-
-public class addRelationship implements HttpHandler {
+public class getMovie implements HttpHandler {
 
     private neo4jDatabase dataBase;
-    private String actorId;
     private String movieId;
 
-    public addRelationship() {
+    public getMovie() {
         this.dataBase = new neo4jDatabase();
     }
 
     public void handle(HttpExchange r) {
         try {
-            if (r.getRequestMethod().equals("PUT")) {
-                handlePut(r);
+            if (r.getRequestMethod().equals("GET")) {
+                handleGet(r);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void handlePut(HttpExchange r) throws IOException, JSONException {
+    public void handleGet(HttpExchange r) throws IOException, JSONException {
         try {
+            System.out.println("1");
             String body = Utils.convert(r.getRequestBody());
             JSONObject deserialized = new JSONObject(body);
-    
-            if (deserialized.has("movieId") && deserialized.has("actorId")) {
+
+            if (deserialized.has("movieId")) {
                 this.movieId = deserialized.getString("movieId");
-                this.actorId = deserialized.getString("actorId");
-    
-                int check = dataBase.insertRelation(movieId, actorId);
+
+                int check = dataBase.getMovie(movieId);
                 if (check == 1) {
-                    r.sendResponseHeaders(200, -1);
-                } else if (check == 2) {
-                    
-                    r.sendResponseHeaders(404, -1);
-                } else {
+                    JSONObject response = dataBase.getResponse();
+                    r.sendResponseHeaders(200, response.toString().length());
+                    OutputStream os = r.getResponseBody();
+                    os.write(response.toString().getBytes());
+                    os.close();
+                } else if (check == 3) {
                     r.sendResponseHeaders(500, -1);
+                } else {
+                    r.sendResponseHeaders(404, -1);
                 }
-    
+
             } else {
                 r.sendResponseHeaders(400, -1);
             }
+
+
         } catch (Exception e) {
             r.sendResponseHeaders(500, -1);
         }
-
     }
-
 }

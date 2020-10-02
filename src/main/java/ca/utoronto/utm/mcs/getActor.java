@@ -38,14 +38,12 @@ public class getActor implements HttpHandler {
 
                 int check = dataBase.getActor(actorId);
                 if (check == 1) {
-                	System.out.println("Here");
-                	String response = neo4jDatabase.getResponse();
-                	r.sendResponseHeaders(200, response.length());
+                	JSONObject response = dataBase.getResponse();
+                	r.sendResponseHeaders(200, response.toString().length());
                 	OutputStream os = r.getResponseBody();
-                    os.write(response.getBytes());
+                    os.write(response.toString().getBytes());
                     os.close();
                 } else if (check == 3) {
-                	System.out.println("Here2");
                 	r.sendResponseHeaders(500, -1);
                 } else {
                 	r.sendResponseHeaders(404, -1);
@@ -57,7 +55,6 @@ public class getActor implements HttpHandler {
 
 
         } catch (Exception e) {
-        	System.out.println("Here1");
             r.sendResponseHeaders(500, -1);
         }
     }

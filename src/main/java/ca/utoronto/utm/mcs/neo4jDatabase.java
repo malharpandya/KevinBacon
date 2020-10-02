@@ -4,6 +4,7 @@ import static org.neo4j.driver.Values.parameters;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
@@ -13,7 +14,7 @@ import java.util.*;
 public class neo4jDatabase {
     private Driver driver;
     private String uriDb; 
-    private static String response;
+    private JSONObject response;
 
     public neo4jDatabase() {
         uriDb = "bolt://localhost:7687";
@@ -114,7 +115,7 @@ public class neo4jDatabase {
                 if(!(actorExist.hasNext() && movieExist.hasNext())) {
                     System.out.println("here1");
                     session.close();
-                    return 2;
+                    return 4;
                 }
 
                 // Actor and Movie already have a relation
@@ -157,47 +158,97 @@ public class neo4jDatabase {
 
 			try (Transaction tx = session.beginTransaction()) {
 				
+			    //Actor does not exist error 404 
 				Result actorIdResult = tx.run("MATCH (a:actor {actorId: $x}) \n RETURN a.actorId", parameters("x", actorId));
 				if (!actorIdResult.hasNext()) {
 					session.close();
 					return 4;
 				}
 				
+				//Get Actor's name 
 				Result actorResult = tx.run("MATCH (a:actor {actorId: $x}) \n RETURN a.name", parameters("x", actorId));
 				String actorString = actorResult.single().get(0).toString();
 				actorString = actorString.substring(1, actorString.length() - 1);
+                
+				Result moviesResult = tx.run("MATCH (a:actor {actorId:$x}), (b:movie) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN b.movieId", parameters("x", actorId));	
 				
-				
-				
-				
-				Result moviesResult = tx.run("MATCH (a:actor {actorId: $x}) - [​r:ACTED_IN] -> (b:movie) \n RETURN b.name", parameters("x", actorId));
-				
-				//while(moviesResult.hasNext()) {
-					//xxxString a = moviesResult.next().get("b.name").toString();
-					//System.out.println(a);
-				//}
-				
-				
-				
-				response = new JSONObject().put("movies", "c").put("name", actorString).put("actorId", actorId).toString();
-				System.out.println(response);
+				List<String> movieList = new ArrayList<>();
+                int i = 0;
+                while(moviesResult.hasNext()) {
+                    String temp = moviesResult.next().get(i).toString();
+                    temp = temp.substring(1, temp.length() - 1);
+                    movieList.add(temp);
+                    System.out.println(temp);
+                }
+
+				response = new JSONObject().put("actorId", actorId).put("name", actorString).put("movies", movieList);
 				session.close();
 				return 1;
 				
 				
 			} catch (Exception e) {
-				System.out.println("NANI");
+			    System.out.println("Error1");
 				session.close();
 				return 3;
 			}
 
 		} catch (Exception e) {
+		    System.out.println("Error2");
 			return 3;
 		}
 	}
     
-    public static String getResponse() {
-		return response;
+public int getMovie(String movieId) {
+        
+        try (Session session = driver.session()) {
+
+            try (Transaction tx = session.beginTransaction()) {
+                
+                System.out.println("1");
+                //Movie does not exist error 404 
+                Result movieIdResult = tx.run("MATCH (a:movie {movieId: $x}) \n RETURN a.movieId", parameters("x", movieId));
+                if (!movieIdResult.hasNext()) {
+                    session.close();
+                    return 4;
+                }
+                
+                //Get Movie's name 
+                Result movieResult = tx.run("MATCH (a:movie {movieId: $x}) \n RETURN a.name", parameters("x", movieId));
+                String movieString = movieResult.single().get(0).toString();
+                movieString = movieString.substring(1, movieString.length() - 1);
+                
+                Result actorsResult = tx.run("MATCH (a:actor), (b:movie  {movieId:$x}) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN a.actorId", parameters("x", movieId));   
+                
+                List<String> actorsList = new ArrayList<>();
+                int i = 0;
+                while(actorsResult.hasNext()) {
+                    String temp = actorsResult.next().get(i).toString();
+                    temp = temp.substring(1, temp.length() - 1);
+                    actorsList.add(temp);
+                    System.out.println(temp);
+                }
+
+                response = new JSONObject().put("movieId", movieId).put("name", movieString).put("actors", actorsList);
+                session.close();
+                return 1;
+                
+                
+            } catch (Exception e) {
+                System.out.println("Error1");
+                session.close();
+                return 3;
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error2");
+            return 3;
+        }
+    }
+    
+    
+    
+    public JSONObject getResponse() {
+		return this.response;
 	}
 
 	public void close() {
