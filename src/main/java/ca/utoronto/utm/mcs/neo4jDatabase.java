@@ -33,14 +33,14 @@ public class neo4jDatabase {
                     session.close();
                     return 2;
                 }
-                
+
                 Result actorIdResult =
                         tx.run("MATCH (a:actor {actorId:$x}) \n RETURN a.actorId", parameters("x", actorId));
                 if (actorIdResult.hasNext()) {
                     session.close();
                     return 2;
                 }
-                
+
             } catch (Exception e) {
                 return 3;
             }
@@ -53,7 +53,7 @@ public class neo4jDatabase {
             } catch (Exception e) {
                 return 3;
             }
-            
+
         } catch (Exception e) {
             return 3;
         }
@@ -70,7 +70,7 @@ public class neo4jDatabase {
                     session.close();
                     return 2;
                 }
-                
+
                 Result movieIdResult =
                         tx.run("MATCH (a:movie {movieId:$x}) \n RETURN a.movieId", parameters("x", movieId));
                 if (movieIdResult.hasNext()) {
@@ -100,7 +100,52 @@ public class neo4jDatabase {
 
     // MALHAR WORK ON THIS.
     public int insertRelation(String movieId, String actorId) {
-        return 0;
+
+        try (Session session = driver.session()) {
+            try (Transaction tx = session.beginTransaction()) {
+                
+                // Actor or Movie does not exist
+                Result actorExist = tx.run("MATCH (a:actor {actorId:$x}) \n RETURN a.actorId", parameters("x", actorId));
+                Result movieExist = tx.run("MATCH (a:movie {movieId:$x}) \n RETURN a.movieId", parameters("x", movieId));
+                
+                if(!(actorExist.hasNext() && movieExist.hasNext())) {
+                    System.out.println("here1");
+                    session.close();
+                    return 2;
+                }
+
+                // Actor and Movie already have a relation
+
+                Result relationExist = tx.run("MATCH (a:actor {actorId:$x}), (b:movie {movieId:$y}) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN r", parameters("x", actorId, "y", movieId));
+                
+                if(relationExist.hasNext()) {
+                    session.close();
+                    System.out.println("here3");
+                    return 2;
+                }
+                
+            } catch (Exception e) {
+                session.close();
+                return 3;
+            }
+            
+            // Make the relation ship
+            try {
+                System.out.println("here2");
+                session.writeTransaction(
+                        yx -> yx.run("MATCH (a:actor {actorId:$x}), (b:movie {movieId:$y}) \n MERGE (a)-[r:ACTED_IN]->(b)", parameters("x", actorId, "y", movieId)));
+                System.out.println("here4");
+                session.close();
+                return 1;
+            } catch (Exception e) {
+                System.out.println("Error1");
+                session.close();
+                return 3;
+            }
+            
+        } catch (Exception e) {
+            return 3;
+        }
     }
 
     public void close() {
