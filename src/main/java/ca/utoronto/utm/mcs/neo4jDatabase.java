@@ -7,10 +7,13 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+import org.json.*;
+import java.util.*;
 
 public class neo4jDatabase {
     private Driver driver;
-    private String uriDb;
+    private String uriDb; 
+    private static String response;
 
     public neo4jDatabase() {
         uriDb = "bolt://localhost:7687";
@@ -149,6 +152,7 @@ public class neo4jDatabase {
     }
     
     public int getActor(String actorId) {
+    	
 		try (Session session = driver.session()) {
 
 			try (Transaction tx = session.beginTransaction()) {
@@ -160,14 +164,29 @@ public class neo4jDatabase {
 				}
 				
 				Result actorResult = tx.run("MATCH (a:actor {actorId: $x}) \n RETURN a.name", parameters("x", actorId));
+				String actorString = actorResult.single().get(0).toString();
+				actorString = actorString.substring(1, actorString.length() - 1);
+				
+				
+				
 				
 				Result moviesResult = tx.run("MATCH (a:actor {actorId: $x}) - [​r:ACTED_IN] -> (b:movie) \n RETURN b.name", parameters("x", actorId));
 				
+				//while(moviesResult.hasNext()) {
+					//xxxString a = moviesResult.next().get("b.name").toString();
+					//System.out.println(a);
+				//}
+				
+				
+				
+				response = new JSONObject().put("movies", "c").put("name", actorString).put("actorId", actorId).toString();
+				System.out.println(response);
 				session.close();
 				return 1;
 				
 				
 			} catch (Exception e) {
+				System.out.println("NANI");
 				session.close();
 				return 3;
 			}
@@ -176,8 +195,12 @@ public class neo4jDatabase {
 			return 3;
 		}
 	}
+    
+    public static String getResponse() {
+		return response;
+	}
 
-    public void close() {
+	public void close() {
         driver.close();
     }
 }
