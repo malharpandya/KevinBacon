@@ -8,13 +8,12 @@ import org.json.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-public class hasRelationship implements HttpHandler {
+public class computeBaconNumber implements HttpHandler {
 
     private neo4jDatabase dataBase;
     private String actorId;
-    private String movieId;
 
-    public hasRelationship() {
+    public computeBaconNumber() {
         this.dataBase = new neo4jDatabase();
     }
 
@@ -34,21 +33,16 @@ public class hasRelationship implements HttpHandler {
             String body = Utils.convert(r.getRequestBody());
             JSONObject deserialized = new JSONObject(body);
 
-            if (deserialized.has("actorId") && deserialized.has("movieId")) {
+            if (deserialized.has("actorId")) {
                 this.actorId = deserialized.getString("actorId");
-                this.movieId = deserialized.getString("movieId");
 
-                int check = dataBase.hasRelationship(actorId, movieId);
+                int check = dataBase.getBaconNumber(actorId);
                 if (check == 1) {
-                	JSONObject response = dataBase.getResponse();
-                	r.sendResponseHeaders(200, response.toString().length());
-                	OutputStream os = r.getResponseBody();
-                    os.write(response.toString().getBytes());
-                    os.close();
-                } else if (check == 4) {
-                	r.sendResponseHeaders(404, -1);
+                    r.sendResponseHeaders(200, -1);
+                } else if (check == 2) {
+                    r.sendResponseHeaders(400, -1);
                 } else {
-                	r.sendResponseHeaders(500, -1);
+                    r.sendResponseHeaders(500, -1);
                 }
 
             } else {
@@ -61,4 +55,3 @@ public class hasRelationship implements HttpHandler {
         }
     }
 }
-
