@@ -221,13 +221,12 @@ public class neo4jDatabase {
                 Result actorsResult = tx.run("MATCH (a:actor), (b:movie  {id:$x}) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN a.id", parameters("x", movieId));   
                 
                 List<String> actorsList = new ArrayList<>();
-                int i = 0;
                 while(actorsResult.hasNext()) {
-                    String temp = actorsResult.next().get(i).toString();
+                    String temp = actorsResult.next().get(0).toString();
                     temp = temp.substring(1, temp.length() - 1);
                     actorsList.add(temp);
                     System.out.println(temp);
-                } // "dfadf" -> dfadf 
+                }
 
                 response = new JSONObject().put("movieId", movieId).put("name", movieString).put("actors", actorsList);
                 session.close();
@@ -312,6 +311,72 @@ public class neo4jDatabase {
             return 3;
         }
       
+    }
+    
+    public int getBaconPath(String actorId, boolean unique) {
+    	try (Session session = driver.session()){
+    		
+    		try (Transaction tx = session.beginTransaction()){
+    			
+    			if(unique) {
+    				
+    				// checks if actor exists
+    				Result actorIdResult = tx.run("MATCH(a:actor {id: $x}) \n RETURN a.id", parameters("x", actorId));
+        			if(!actorIdResult.hasNext()) {
+        				session.close();
+        				return 2;
+        			}
+        			
+        			Result baconPathResult = tx.run("MATCH (a:actor { id: $x }),(b:actor { id: $y }), p = shortestPath((a)-[*..]-(b)) \n RETURN p", parameters("x", actorId , "y", "nm0000102"));
+                    if(!baconPathResult.hasNext()) {
+                        session.close();
+                        return 4; //path not found
+                    }
+        			
+        			String num = String.valueOf((baconPathResult.next().get("p").size())/2);
+                    
+                    List<JSONObject> baconPath = new ArrayList<>();
+                    
+                    while(baconPathResult.hasNext()) {
+                    	
+                    	String id = baconPathResult.next().get("id").asString();
+                        System.out.println(id);
+                    }
+                    
+                    
+                    
+                    response = new JSONObject().put("baconNumber", num ).put("baconPath", baconPath);
+                    session.close();
+                    return 1;
+    			}
+    			else {
+    				// find a random movie of kevin bacon and put in response
+    				Result randomMovieResult = tx.run("MATCH (a:actor {id: $x}),(m:movie), (a)-[:ACTED_IN]->(m) \n RETURN b.id, rand() as r \n ORDER BY r", parameters("$x", "nm0000102"));
+    				if(!randomMovieResult.hasNext()) {
+        				session.close();
+        				return 2;
+        			}
+    				
+    				String movieString = randomMovieResult.single().get(0).toString();
+                    movieString = movieString.substring(1, movieString.length() - 1);
+    				
+                    List<JSONObject> baconPath = new ArrayList<>();
+    				JSONObject randomMovie = new JSONObject().put("actorId", "nm0000102").put("movieId", movieString);
+    				baconPath.add(randomMovie);
+    				
+    				response = new JSONObject().put("baconNumber", "0").put("baconPath", baconPath);
+    				session.close();
+    				return 1;
+    				
+    			}
+    			
+    		} catch(Exception e) {
+    			return 3;
+    		}
+    		
+    	} catch (Exception e) {
+    		return 3;
+    	}
     }
     
     public JSONObject getResponse() {
