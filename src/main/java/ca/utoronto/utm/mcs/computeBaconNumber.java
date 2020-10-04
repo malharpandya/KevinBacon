@@ -38,10 +38,17 @@ public class computeBaconNumber implements HttpHandler {
 
                 int check = dataBase.getBaconNumber(actorId);
                 if (check == 1) {
-                    r.sendResponseHeaders(200, -1);
+                    JSONObject response = dataBase.getResponse();
+                    r.sendResponseHeaders(200, response.toString().length());
+                    OutputStream os = r.getResponseBody();
+                    os.write(response.toString().getBytes());
+                    os.close();
                 } else if (check == 2) {
                     r.sendResponseHeaders(400, -1);
+                } else if (check == 4) {
+                    r.sendResponseHeaders(404, -1);
                 } else {
+                    System.out.println("ASdfasd");
                     r.sendResponseHeaders(500, -1);
                 }
 

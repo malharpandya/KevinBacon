@@ -227,7 +227,7 @@ public class neo4jDatabase {
                     temp = temp.substring(1, temp.length() - 1);
                     actorsList.add(temp);
                     System.out.println(temp);
-                }
+                } // "dfadf" -> dfadf 
 
                 response = new JSONObject().put("movieId", movieId).put("name", movieString).put("actors", actorsList);
                 session.close();
@@ -279,7 +279,39 @@ public class neo4jDatabase {
     }
     
     public int getBaconNumber(String actorId) {
-        return 0;
+        
+        try (Session session = driver.session()) {
+            
+            try (Transaction tx = session.beginTransaction()) {
+                
+                //check if actor exist in database
+                Result actorExist = tx.run("MATCH (a:actor {id: $x}) \n RETURN a.id", parameters("x", actorId));
+                if(!actorExist.hasNext()) {
+       
+                    session.close();
+                    return 2;
+                }
+                
+                Result checkPath = tx.run("MATCH (a:actor { id: $x }),(b:actor { id: $y }), p = shortestPath((a)-[*..]-(b)) \n RETURN p", parameters("x", actorId , "y", "nm0000102"));
+                if(!checkPath.hasNext()) {
+                    System.out.println("NOPE");
+                    session.close();
+                    return 4;
+                }
+                String num = String.valueOf((checkPath.next().get("p").size())/2);
+                
+                response = new JSONObject().put("baconNumber", num );
+                return 1;
+                
+                
+            } catch (Exception e) {
+                return 3;
+            }
+            
+        } catch(Exception e) {
+            return 3;
+        }
+      
     }
     
     public JSONObject getResponse() {
