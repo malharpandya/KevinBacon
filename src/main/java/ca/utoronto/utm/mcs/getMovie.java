@@ -37,16 +37,14 @@ public class getMovie implements HttpHandler {
                 this.movieId = deserialized.getString("movieId");
 
                 int check = dataBase.getMovie(movieId);
-                if (check == 1) {
+                if (check == 200) {
                     JSONObject response = dataBase.getResponse();
                     r.sendResponseHeaders(200, response.toString().length());
                     OutputStream os = r.getResponseBody();
                     os.write(response.toString().getBytes());
                     os.close();
-                } else if (check == 3) {
-                    r.sendResponseHeaders(500, -1);
                 } else {
-                    r.sendResponseHeaders(404, -1);
+                    r.sendResponseHeaders(check, -1);
                 }
 
             } else {
@@ -55,7 +53,7 @@ public class getMovie implements HttpHandler {
 
 
         } catch (Exception e) {
-            r.sendResponseHeaders(500, -1);
+            r.sendResponseHeaders(400, -1);
         }
     }
 }

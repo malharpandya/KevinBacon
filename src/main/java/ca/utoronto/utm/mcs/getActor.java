@@ -37,17 +37,17 @@ public class getActor implements HttpHandler {
                 this.actorId = deserialized.getString("actorId");
 
                 int check = dataBase.getActor(actorId);
-                if (check == 1) {
+                if (check == 200) {
                 	JSONObject response = dataBase.getResponse();
                 	r.sendResponseHeaders(200, response.toString().length());
                 	OutputStream os = r.getResponseBody();
                     os.write(response.toString().getBytes());
                     os.close();
-                } else if (check == 3) {
-                	r.sendResponseHeaders(500, -1);
-                } else {
-                	r.sendResponseHeaders(404, -1);
                 }
+                else {
+                    r.sendResponseHeaders(check, -1);
+                }
+                
 
             } else {
                 r.sendResponseHeaders(400, -1);
@@ -55,7 +55,7 @@ public class getActor implements HttpHandler {
 
 
         } catch (Exception e) {
-            r.sendResponseHeaders(500, -1);
+            r.sendResponseHeaders(400, -1);
         }
     }
 }

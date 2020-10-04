@@ -22,12 +22,7 @@ public class neo4jDatabase {
         driver = GraphDatabase.driver(uriDb, AuthTokens.basic("neo4j", "1234"));
     }
     
-    //CLOSE TX
-    // s is the node
-    // Actor is the node LABEL
-    // actor is the key (aka node has the property of key)
-    // $x is the value for the key
-    // 1 if successfull, 2 if id or actor name exist, 3 if neither
+
     public int insertActor(String actor, String actorId) {
 
         try (Session session = driver.session()) {
@@ -37,31 +32,31 @@ public class neo4jDatabase {
                 if (actorResult.hasNext()) {
 
                     session.close();
-                    return 2;
+                    return 400;
                 }
 
                 Result actorIdResult =
                         tx.run("MATCH (a:actor {id:$x}) \n RETURN a.id", parameters("x", actorId));
                 if (actorIdResult.hasNext()) {
                     session.close();
-                    return 2;
+                    return 400;
                 }
 
             } catch (Exception e) {
-                return 3;
+                return 500;
             }
 
             try {
                 session.writeTransaction(
                         tx -> tx.run("MERGE (a:actor {name: $x , id: $y})", parameters("x", actor, "y", actorId)));
                 session.close();
-                return 1;
+                return 200;
             } catch (Exception e) {
-                return 3;
+                return 500;
             }
 
         } catch (Exception e) {
-            return 3;
+            return 500;
         }
     }
 
@@ -74,37 +69,36 @@ public class neo4jDatabase {
                 if (movieResult.hasNext()) {
 
                     session.close();
-                    return 2;
+                    return 400;
                 }
 
                 Result movieIdResult =
                         tx.run("MATCH (a:movie {id:$x}) \n RETURN a.id", parameters("x", movieId));
                 if (movieIdResult.hasNext()) {
                     session.close();
-                    return 2;
+                    return 400;
                 }
 
 
             } catch (Exception e) {
                 session.close();
-                return 3;
+                return 500;
             }
 
             try {
                 session.writeTransaction(
                         yx -> yx.run("MERGE (a:movie {name: $x , id: $y})", parameters("x", movie, "y", movieId)));
                 session.close();
-                return 1;
+                return 200;
             } catch (Exception e) {
-                return 3;
+                return 500;
             }
 
         } catch (Exception e) {
-            return 3;
+            return 500;
         }
     }
 
-    // MALHAR WORK ON THIS.
     public int insertRelation(String movieId, String actorId) {
 
         try (Session session = driver.session()) {
@@ -115,42 +109,37 @@ public class neo4jDatabase {
                 Result movieExist = tx.run("MATCH (a:movie {id:$x}) \n RETURN a.id", parameters("x", movieId));
                 
                 if(!(actorExist.hasNext() && movieExist.hasNext())) {
-                    System.out.println("here1");
                     session.close();
-                    return 4;
+                    return 404;
                 }
 
                 // Actor and Movie already have a relation
-
                 Result relationExist = tx.run("MATCH (a:actor {id:$x}), (b:movie {id:$y}) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN r", parameters("x", actorId, "y", movieId));
                 
                 if(relationExist.hasNext()) {
                     session.close();
-                    System.out.println("here3");
-                    return 2;
+                    return 400;
                 }
                 
             } catch (Exception e) {
                 session.close();
-                return 3;
+                return 500;
             }
             
             // Make the relation ship
             try {
-                System.out.println("here2");
                 session.writeTransaction(
                         yx -> yx.run("MATCH (a:actor {id:$x}), (b:movie {id:$y}) \n MERGE (a)-[r:ACTED_IN]->(b)", parameters("x", actorId, "y", movieId)));
-                System.out.println("here4");
                 session.close();
-                return 1;
+                return 200;
+                
             } catch (Exception e) {
-                System.out.println("Error1");
                 session.close();
-                return 3;
+                return 500;
             }
             
         } catch (Exception e) {
-            return 3;
+            return 500;
         }
     }
     
@@ -160,43 +149,36 @@ public class neo4jDatabase {
 
 			try (Transaction tx = session.beginTransaction()) {
 				
-			    //Actor does not exist error 404 
+			    //Actor does not exist
 				Result actorIdResult = tx.run("MATCH (a:actor {id: $x}) \n RETURN a.id", parameters("x", actorId));
 				if (!actorIdResult.hasNext()) {
 					session.close();
-					return 4;
+					return 404;
 				}
 				
 				//Get Actor's name 
 				Result actorResult = tx.run("MATCH (a:actor {id: $x}) \n RETURN a.name", parameters("x", actorId));
-				String actorString = actorResult.single().get(0).toString();
-				actorString = actorString.substring(1, actorString.length() - 1);
+				String actorString = actorResult.single().get(0).asString();
                 
 				Result moviesResult = tx.run("MATCH (a:actor {id:$x}), (b:movie) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN b.id", parameters("x", actorId));	
 				
 				List<String> movieList = new ArrayList<>();
-                int i = 0;
                 while(moviesResult.hasNext()) {
-                    String temp = moviesResult.next().get(i).toString();
-                    temp = temp.substring(1, temp.length() - 1);
-                    movieList.add(temp);
-                    System.out.println(temp);
+                    movieList.add(moviesResult.next().get(0).asString());
                 }
 
 				response = new JSONObject().put("actorId", actorId).put("name", actorString).put("movies", movieList);
 				session.close();
-				return 1;
+				return 200;
 				
 				
 			} catch (Exception e) {
-			    System.out.println("Error1");
 				session.close();
-				return 3;
+				return 500;
 			}
 
 		} catch (Exception e) {
-		    System.out.println("Error2");
-			return 3;
+			return 500;
 		}
 	}
     
@@ -206,43 +188,36 @@ public class neo4jDatabase {
 
             try (Transaction tx = session.beginTransaction()) {
                 
-                System.out.println("1");
                 //Movie does not exist error 404 
                 Result movieIdResult = tx.run("MATCH (a:movie {id: $x}) \n RETURN a.id", parameters("x", movieId));
                 if (!movieIdResult.hasNext()) {
                     session.close();
-                    return 4;
+                    return 404;
                 }
                 
                 //Get Movie's name 
                 Result movieResult = tx.run("MATCH (a:movie {id: $x}) \n RETURN a.name", parameters("x", movieId));
-                String movieString = movieResult.single().get(0).toString();
-                movieString = movieString.substring(1, movieString.length() - 1);
+                String movieString = movieResult.single().get(0).asString();
                 
                 Result actorsResult = tx.run("MATCH (a:actor), (b:movie  {id:$x}) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN a.id", parameters("x", movieId));   
                 
                 List<String> actorsList = new ArrayList<>();
                 while(actorsResult.hasNext()) {
-                    String temp = actorsResult.next().get(0).toString();
-                    temp = temp.substring(1, temp.length() - 1);
-                    actorsList.add(temp);
-                    System.out.println(temp);
+                    actorsList.add(actorsResult.next().get(0).asString());
                 }
 
                 response = new JSONObject().put("movieId", movieId).put("name", movieString).put("actors", actorsList);
                 session.close();
-                return 1;
+                return 200;
                 
                 
             } catch (Exception e) {
-                System.out.println("Error1");
                 session.close();
-                return 3;
+                return 500;
             }
 
         } catch (Exception e) {
-            System.out.println("Error2");
-            return 3;
+            return 500;
         }
     }
     
@@ -255,25 +230,24 @@ public class neo4jDatabase {
     			Result movieIdResult = tx.run("MATCH (a:movie {id: $x}) \n RETURN a.id", parameters("x", movieId));
     			if (!(movieIdResult.hasNext() && actorIdResult.hasNext())) {
                     session.close();
-                    return 4;
+                    return 404;
                 }
     			
     			Result hasRelationResult = tx.run("MATCH (a:actor {id:$x}), (b:movie {id:$y}) \n RETURN EXISTS((a)-[:ACTED_IN]->(b))", parameters("x", actorId, "y", movieId));
     			
     			Boolean hasRelationshipbool = hasRelationResult.next().get(0).isTrue();
-    			System.out.println(hasRelationshipbool.toString());
-    			
+
     			response = new JSONObject().put("actorId", actorId).put("movieId", movieId).put("hasRelationship", hasRelationshipbool);
                 session.close();
-                return 1;
+                return 200;
     			
     			
     		} catch (Exception e) {
-    			return 3;
+    			return 500;
     		}
     		
     	} catch(Exception e) {
-    		return 3;
+    		return 500;
     	}
     		
     }
@@ -287,34 +261,30 @@ public class neo4jDatabase {
                 if(actorId.equals("nm0000102")) {
                     session.close();
                     response = new JSONObject().put("baconNumber", "0" );
-                    return 1;
+                    return 200;
                 }
                 //check if actor exist in database
                 Result actorExist = tx.run("MATCH (a:actor {id: $x}) \n RETURN a.id", parameters("x", actorId));
                 if(!actorExist.hasNext()) {
-       
                     session.close();
-                    return 2;
+                    return 400;
                 }
                 
                 Result checkPath = tx.run("MATCH (a:actor { id: $x }),(b:actor { id: $y }), p = shortestPath((a)-[*..]-(b)) \n RETURN p", parameters("x", actorId , "y", "nm0000102"));
                 if(!checkPath.hasNext()) {
-                    System.out.println("NOPE");
                     session.close();
-                    return 4;
+                    return 404;
                 }
-                String num = String.valueOf((checkPath.next().get("p").size())/2);
-                
+                String num = String.valueOf((checkPath.next().get("p").size())/2);                
                 response = new JSONObject().put("baconNumber", num );
-                return 1;
-                
-                
+                return 200;
+                              
             } catch (Exception e) {
-                return 3;
+                return 500;
             }
             
         } catch(Exception e) {
-            return 3;
+            return 500;
         }
       
     }
@@ -324,16 +294,14 @@ public class neo4jDatabase {
     		
     		try (Transaction tx = session.beginTransaction()){
     			
-    		    System.out.println("here1");
     		    int checkPath = this.getBaconNumber(actorId);
     		    List<JSONObject> baconPath = new ArrayList<>();
-    		    //IF KEVIN BACON
-    		    if(checkPath == 1 && actorId.equals("nm0000102")) {
+    		    if(checkPath == 200 && actorId.equals("nm0000102")) {
     		        
     		      Result randomMovieResult = tx.run("MATCH (a:actor {id:$x}), (b:movie) \n MATCH (a)-[r:ACTED_IN]->(b) \n RETURN b.id , rand() as r \n ORDER BY r", parameters("x", "nm0000102"));
     		      if(!randomMovieResult.hasNext()) {
     		        session.close();
-    		        return 2;
+    		        return 404;
     		      }
     		      String movieString = randomMovieResult.next().get(0).asString();
     		      
@@ -341,9 +309,9 @@ public class neo4jDatabase {
     		      baconPath.add(randomMovie);
     		      response.put("baconPath", baconPath);
     		      session.close();
-    		      return 1;
+    		      return 200;
     		    }
-    		    else if (checkPath == 1){
+    		    else if (checkPath == 200){
 
     		      Result pathWay = tx.run("MATCH (a:actor { id: $x }),(b:actor { id: $y }), p = shortestPath((a)-[*..]-(b)) \n RETURN [node in nodes(p) | node.id] as nodes", parameters("x", actorId , "y", "nm0000102"));
     		      Value pathWayID = pathWay.next().get("nodes");
@@ -358,63 +326,33 @@ public class neo4jDatabase {
     		    
                   response.put("baconPath", baconPath);
                   session.close();
-                  return 1;
+                  return 200;
     		    }
-    		    else{
+    		    else if (checkPath == 404){
+    		        
+    		        response = new JSONObject().put("baconPath", baconPath);
+    		        session.close();
+    		        return 200;
+    		    }
+    		    else {
     		        session.close();
     		        return checkPath;
     		    }
     			
     		} catch(Exception e) {
-    			return 3;
+    			return 500;
     		}
     		
     	} catch (Exception e) {
-    		return 3;
+    		return 500;
     	}
     }
     
     public JSONObject getResponse() {
 		return this.response;
-	}
+    }
 
-	public void close() {
+    public void close() {
         driver.close();
     }
 }
-
-//if(unique) {
-//
-//// checks if actor exists
-//Result actorIdResult = tx.run("MATCH(a:actor {id: $x}) \n RETURN a.id", parameters("x", actorId));
-//if(!actorIdResult.hasNext()) {
-//  session.close();
-//  return 2;
-//}
-//
-//Result baconPathResult = tx.run("MATCH (a:actor { id: $x }),(b:actor { id: $y }), p = shortestPath((a)-[*..]-(b)) \n RETURN p", parameters("x", actorId , "y", "nm0000102"));
-//if(!baconPathResult.hasNext()) {
-//    session.close();
-//    return 4; //path not found
-//}
-//
-//String num = String.valueOf((baconPathResult.next().get("p").size())/2);
-//
-//List<JSONObject> baconPath = new ArrayList<>();
-//
-//while(baconPathResult.hasNext()) {
-//  
-//  String id = baconPathResult.next().get("id").asString();
-//    System.out.println(id);
-//}
-//
-//
-//
-//response = new JSONObject().put("baconNumber", num ).put("baconPath", baconPath);
-//session.close();
-//return 1;
-//}
-//else {
-//// find a random movie of kevin bacon and put in response
-
-//

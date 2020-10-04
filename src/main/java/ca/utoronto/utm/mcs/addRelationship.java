@@ -38,24 +38,13 @@ public class addRelationship implements HttpHandler {
                 this.movieId = deserialized.getString("movieId");
                 this.actorId = deserialized.getString("actorId");
     
-                int check = dataBase.insertRelation(movieId, actorId);
-                if (check == 1) {
-                    r.sendResponseHeaders(200, -1);
-                } else if (check == 4) {
-                    
-                    r.sendResponseHeaders(404, -1);
-                } else if (check == 2){
-                    r.sendResponseHeaders(400, -1);
-                }
-                else {
-                    r.sendResponseHeaders(500, -1);
-                }
+                r.sendResponseHeaders(dataBase.insertRelation(movieId, actorId), -1);
     
             } else {
                 r.sendResponseHeaders(400, -1);
             }
         } catch (Exception e) {
-            r.sendResponseHeaders(500, -1);
+            r.sendResponseHeaders(400, -1);
         }
 
     }

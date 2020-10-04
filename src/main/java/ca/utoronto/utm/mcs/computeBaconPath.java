@@ -37,19 +37,15 @@ public class computeBaconPath implements HttpHandler {
                 this.actorId = deserialized.getString("actorId");
 
                 int check = dataBase.getBaconPath(actorId);
-                if (check == 1) {
+                if (check == 200) {
                     JSONObject response = dataBase.getResponse();
                     r.sendResponseHeaders(200, response.toString().length());
                     OutputStream os = r.getResponseBody();
                     os.write(response.toString().getBytes());
                     os.close();
-                } else if (check == 2) {
-                    r.sendResponseHeaders(400, -1);
-                } else if (check == 4) {
-                    r.sendResponseHeaders(404, -1);
+
                 } else {
-                    System.out.println("500 ERROR");
-                    r.sendResponseHeaders(500, -1);
+                    r.sendResponseHeaders(check, -1);
                 }
 
             } else {
@@ -58,7 +54,7 @@ public class computeBaconPath implements HttpHandler {
 
 
         } catch (Exception e) {
-            r.sendResponseHeaders(500, -1);
+            r.sendResponseHeaders(400, -1);
         }
     }
 }

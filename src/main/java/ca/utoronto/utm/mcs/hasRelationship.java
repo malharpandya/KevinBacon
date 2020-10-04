@@ -39,25 +39,24 @@ public class hasRelationship implements HttpHandler {
                 this.movieId = deserialized.getString("movieId");
 
                 int check = dataBase.hasRelationship(actorId, movieId);
-                if (check == 1) {
+                if (check == 200) {
                 	JSONObject response = dataBase.getResponse();
                 	r.sendResponseHeaders(200, response.toString().length());
                 	OutputStream os = r.getResponseBody();
                     os.write(response.toString().getBytes());
                     os.close();
-                } else if (check == 4) {
-                	r.sendResponseHeaders(404, -1);
+                
                 } else {
-                	r.sendResponseHeaders(500, -1);
+                	r.sendResponseHeaders(check, -1);
+                
                 }
-
             } else {
                 r.sendResponseHeaders(400, -1);
             }
 
 
         } catch (Exception e) {
-            r.sendResponseHeaders(500, -1);
+            r.sendResponseHeaders(400, -1);
         }
     }
 }
