@@ -43,8 +43,12 @@ public class addActor implements HttpHandler {
                 r.sendResponseHeaders(400, -1);
             }
 
-        } catch (Exception e) {
+        }catch (JSONException e) {
             r.sendResponseHeaders(400, -1);
+         
+        }catch (Exception e) {
+            r.sendResponseHeaders(500, -1);
         }
+        
     }
 }

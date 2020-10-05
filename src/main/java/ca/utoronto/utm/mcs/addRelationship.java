@@ -33,18 +33,21 @@ public class addRelationship implements HttpHandler {
         try {
             String body = Utils.convert(r.getRequestBody());
             JSONObject deserialized = new JSONObject(body);
-    
+
             if (deserialized.has("movieId") && deserialized.has("actorId")) {
                 this.movieId = deserialized.getString("movieId");
                 this.actorId = deserialized.getString("actorId");
-    
+
                 r.sendResponseHeaders(dataBase.insertRelation(movieId, actorId), -1);
-    
+
             } else {
                 r.sendResponseHeaders(400, -1);
             }
-        } catch (Exception e) {
+        }catch (JSONException e) {
             r.sendResponseHeaders(400, -1);
+         
+        }catch (Exception e) {
+            r.sendResponseHeaders(500, -1);
         }
 
     }

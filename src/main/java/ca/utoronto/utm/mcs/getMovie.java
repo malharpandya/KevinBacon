@@ -29,7 +29,6 @@ public class getMovie implements HttpHandler {
 
     public void handleGet(HttpExchange r) throws IOException, JSONException {
         try {
-            System.out.println("1");
             String body = Utils.convert(r.getRequestBody());
             JSONObject deserialized = new JSONObject(body);
 
@@ -52,8 +51,11 @@ public class getMovie implements HttpHandler {
             }
 
 
-        } catch (Exception e) {
+        }catch (JSONException e) {
             r.sendResponseHeaders(400, -1);
+         
+        }catch (Exception e) {
+            r.sendResponseHeaders(500, -1);
         }
     }
 }

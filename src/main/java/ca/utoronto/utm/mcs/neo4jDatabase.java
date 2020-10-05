@@ -329,7 +329,6 @@ public class neo4jDatabase {
                   return 200;
     		    }
     		    else if (checkPath == 404){
-    		        
     		        response = new JSONObject().put("baconPath", baconPath);
     		        session.close();
     		        return 200;

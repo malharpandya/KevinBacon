@@ -43,8 +43,11 @@ public class addMovie implements HttpHandler {
             } else {
                 r.sendResponseHeaders(400, -1);
             }
-        } catch (Exception e) {
+        }catch (JSONException e) {
             r.sendResponseHeaders(400, -1);
+         
+        }catch (Exception e) {
+            r.sendResponseHeaders(500, -1);
         }
     }
 }

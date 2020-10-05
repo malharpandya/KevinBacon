@@ -38,24 +38,26 @@ public class getActor implements HttpHandler {
 
                 int check = dataBase.getActor(actorId);
                 if (check == 200) {
-                	JSONObject response = dataBase.getResponse();
-                	r.sendResponseHeaders(200, response.toString().length());
-                	OutputStream os = r.getResponseBody();
+                    JSONObject response = dataBase.getResponse();
+                    r.sendResponseHeaders(200, response.toString().length());
+                    OutputStream os = r.getResponseBody();
                     os.write(response.toString().getBytes());
                     os.close();
-                }
-                else {
+                } else {
                     r.sendResponseHeaders(check, -1);
                 }
-                
+
 
             } else {
                 r.sendResponseHeaders(400, -1);
             }
 
 
-        } catch (Exception e) {
+        }catch (JSONException e) {
             r.sendResponseHeaders(400, -1);
+         
+        }catch (Exception e) {
+            r.sendResponseHeaders(500, -1);
         }
     }
 }
